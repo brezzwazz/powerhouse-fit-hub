@@ -46,10 +46,10 @@ const Navigation = () => {
               </Link>
             ))}
             <Button asChild variant="outline" size="sm">
-              <Link to="/dashboard">Dashboard</Link>
+              <Link to="/login">Login</Link>
             </Button>
             <Button asChild variant="hero" size="sm">
-              <Link to="/login">Login</Link>
+              <Link to="/signup">Join us</Link>
             </Button>
           </div>
 

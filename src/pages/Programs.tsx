@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -177,12 +178,16 @@ const Programs = () => {
                 </div>
 
                 <div className="pt-4 space-y-2">
-                  <Button className="w-full" variant="default">
+                  <Button asChild variant="default" className="w-full">
+                  <Link to="/signup" className="flex items-center">
                     <PlayCircle className="h-4 w-4 mr-2" />
                     Start Program
-                  </Button>
-                  <Button className="w-full" variant="outline">
+                  </Link>
+                </Button>
+                  <Button className="w-full" asChild variant="outline">
+                    <Link to="/login" className="flex items-center">
                     Learn More
+                    </Link>
                   </Button>
                 </div>
               </CardContent>
@@ -201,10 +206,15 @@ const Programs = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" variant="secondary" className="text-lg px-8">
+                  
+                  <Link to="/dashboard">
                   Get Started Today
+                  </Link>
                 </Button>
                 <Button size="lg" variant="outline" className="text-lg px-8 border-white/20 text-white hover:bg-white/10">
+                 <Link to="/dashboard">
                   Schedule Consultation
+                  </Link>
                 </Button>
               </div>
             </CardContent>

@@ -9,6 +9,11 @@ import Programs from "./pages/Programs";
 import Nutrition from "./pages/Nutrition";
 import Shop from "./pages/Shop";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
+import Notification from "./pages/Notification";
+import NotificationsPage from "./pages/NotificationsPage";
+import SettingsPage from "./pages/SettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -24,7 +29,11 @@ const App = () => (
           <Route path="/programs" element={<Programs />} />
           <Route path="/nutrition" element={<Nutrition />} />
           <Route path="/shop" element={<Shop />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

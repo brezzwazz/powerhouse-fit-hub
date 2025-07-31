@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,277 +14,395 @@ import {
   Shield,
   Zap,
   Plus,
-  Minus
+  Minus,
+  Loader2,
+  AlertCircle,
+  Info
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
-import { useState } from "react";
+
+// Define TypeScript interfaces
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  rating: number;
+  reviews: number;
+  image: string;
+  description: string;
+  features: string[];
+  inStock: boolean;
+  bestseller?: boolean;
+  category: 'suppliments' | 'equipment' | 'apparel';
+}
+
+interface CartItem {
+  product: number;
+  quantity: number;
+}
+
+interface CartResponse {
+  items: CartItem[];
+}
+
+interface OrderData {
+  items: CartItem[];
+  total: number;
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
+// Helper components
+const LoadingPlaceholder = () => (
+  <div className="py-12 flex flex-col items-center justify-center">
+    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+    <p className="mt-4 text-foreground">Loading...</p>
+  </div>
+);
+
+const ErrorPlaceholder = ({ message, onRetry }: { message: string; onRetry: () => void }) => (
+  <div className="py-12 text-center">
+    <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+    <h3 className="text-xl font-medium text-foreground mb-2">Error</h3>
+    <p className="text-muted-foreground mb-6">{message}</p>
+    <Button onClick={onRetry}>
+      Retry
+    </Button>
+  </div>
+);
+
+const EmptyPlaceholder = ({ message }: { message: string }) => (
+  <div className="py-12 text-center">
+    <Info className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+    <p className="text-muted-foreground">{message}</p>
+  </div>
+);
 
 const Shop = () => {
+  // State for products organized by category
+  const [products, setProducts] = useState<{
+    supplements: Product[],
+    equipment: Product[],
+    apparel: Product[]
+  }>({ supplements: [], equipment: [], apparel: [] });
+  
+  // Individual loading states
+  const [loading, setLoading] = useState({
+    products: true,
+    cart: true,
+    order: false
+  });
+  
+  // Individual error states
+  const [errors, setErrors] = useState({
+    products: null as string | null,
+    cart: null as string | null,
+    order: null as string | null
+  });
+  
   const [cartItems, setCartItems] = useState<{[key: number]: number}>({});
+  const [cartOperation, setCartOperation] = useState({
+    loading: false,
+    productId: null as number | null
+  });
 
-  const products = {
-    supplements: [
-      {
-        id: 1,
-        name: "Premium Whey Protein",
-        price: 49.99,
-        originalPrice: 59.99,
-        rating: 4.8,
-        reviews: 234,
-        image: "🥤",
-        description: "High-quality whey protein isolate for muscle building and recovery.",
-        features: ["25g protein per serving", "Fast absorption", "Great taste", "No artificial fillers"],
-        inStock: true,
-        bestseller: true
-      },
-      {
-        id: 2,
-        name: "Pure Creatine Monohydrate",
-        price: 29.99,
-        rating: 4.9,
-        reviews: 156,
-        image: "💊",
-        description: "Micronized creatine for increased strength and power output.",
-        features: ["5g per serving", "Unflavored", "No loading required", "Third-party tested"],
-        inStock: true
-      },
-      {
-        id: 3,
-        name: "BCAA Energy Drink",
-        price: 39.99,
-        rating: 4.6,
-        reviews: 89,
-        image: "⚡",
-        description: "Branched-chain amino acids with natural caffeine for workout energy.",
-        features: ["2:1:1 BCAA ratio", "Natural caffeine", "Zero sugar", "Tropical flavor"],
-        inStock: false
-      },
-      {
-        id: 4,
-        name: "Multivitamin Complex",
-        price: 24.99,
-        rating: 4.7,
-        reviews: 201,
-        image: "🌿",
-        description: "Complete daily vitamin and mineral support for active lifestyles.",
-        features: ["25 essential nutrients", "Easy to digest", "Non-GMO", "90-day supply"],
-        inStock: true
-      }
-    ],
-    equipment: [
-      {
-        id: 5,
-        name: "Adjustable Dumbbells",
-        price: 299.99,
-        originalPrice: 349.99,
-        rating: 4.8,
-        reviews: 78,
-        image: "🏋️",
-        description: "Space-saving adjustable dumbbells for home workouts.",
-        features: ["5-50 lbs per dumbbell", "Quick weight change", "Compact design", "Includes stand"],
-        inStock: true,
-        bestseller: true
-      },
-      {
-        id: 6,
-        name: "Resistance Band Set",
-        price: 49.99,
-        rating: 4.5,
-        reviews: 167,
-        image: "🎯",
-        description: "Complete resistance band system for full-body workouts.",
-        features: ["5 resistance levels", "Door anchor included", "Exercise guide", "Travel-friendly"],
-        inStock: true
-      },
-      {
-        id: 7,
-        name: "Yoga Mat Pro",
-        price: 79.99,
-        rating: 4.9,
-        reviews: 234,
-        image: "🧘",
-        description: "Premium non-slip yoga mat for all types of workouts.",
-        features: ["6mm thickness", "Non-slip surface", "Eco-friendly", "Alignment lines"],
-        inStock: true
-      },
-      {
-        id: 8,
-        name: "Kettlebell Set",
-        price: 159.99,
-        rating: 4.7,
-        reviews: 92,
-        image: "⚖️",
-        description: "Cast iron kettlebell set for strength and conditioning.",
-        features: ["15, 25, 35 lb bells", "Wide handle", "Flat bottom", "Rust-resistant coating"],
-        inStock: true
-      }
-    ],
-    apparel: [
-      {
-        id: 9,
-        name: "Powerhouse Gym Tee",
-        price: 24.99,
-        rating: 4.6,
-        reviews: 156,
-        image: "👕",
-        description: "Comfortable cotton blend t-shirt with Powerhouse logo.",
-        features: ["Cotton blend", "Moisture-wicking", "Multiple colors", "Preshrunk"],
-        inStock: true
-      },
-      {
-        id: 10,
-        name: "Training Shorts",
-        price: 34.99,
-        rating: 4.5,
-        reviews: 89,
-        image: "🩳",
-        description: "Lightweight training shorts with built-in compression liner.",
-        features: ["Quick-dry fabric", "Compression liner", "Side pockets", "Reflective details"],
-        inStock: true
-      },
-      {
-        id: 11,
-        name: "Gym Towel Set",
-        price: 19.99,
-        rating: 4.8,
-        reviews: 201,
-        image: "🧻",
-        description: "Absorbent microfiber towels perfect for gym workouts.",
-        features: ["Set of 3 towels", "Microfiber material", "Quick-dry", "Antimicrobial"],
-        inStock: true
-      },
-      {
-        id: 12,
-        name: "Training Gloves",
-        price: 29.99,
-        rating: 4.4,
-        reviews: 134,
-        image: "🧤",
-        description: "Padded training gloves for better grip and protection.",
-        features: ["Breathable material", "Wrist support", "Non-slip grip", "Multiple sizes"],
-        inStock: true
-      }
-    ]
-  };
-
-  const addToCart = (productId: number) => {
-    setCartItems(prev => ({
-      ...prev,
-      [productId]: (prev[productId] || 0) + 1
-    }));
-  };
-
-  const removeFromCart = (productId: number) => {
-    setCartItems(prev => ({
-      ...prev,
-      [productId]: Math.max(0, (prev[productId] || 0) - 1)
-    }));
-  };
-
-  const ProductCard = ({ product }: { product: any }) => (
-    <Card className="bg-gradient-card border-border hover:shadow-glow transition-all duration-300 relative">
-      {product.bestseller && (
-        <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground z-10">
-          Bestseller
-        </Badge>
-      )}
-      {product.originalPrice && (
-        <Badge className="absolute top-3 right-3 bg-green-500/20 text-green-400 z-10">
-          Sale
-        </Badge>
-      )}
+  // Fetch products from API
+  const fetchProducts = async () => {
+    try {
+      setLoading(prev => ({ ...prev, products: true }));
+      setErrors(prev => ({ ...prev, products: null }));
       
-      <CardHeader>
-        <div className="text-center space-y-2">
-          <span className="text-5xl">{product.image}</span>
-          <CardTitle className="text-lg text-foreground">{product.name}</CardTitle>
-        </div>
-      </CardHeader>
+      const response = await axios.get(`${API_BASE_URL}/products/`);
+      const data = response.data;
       
-      <CardContent className="space-y-4">
-        <div className="text-center">
-          <div className="flex items-center justify-center space-x-1 mb-2">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={`h-4 w-4 ${
-                  i < Math.floor(product.rating) ? "text-yellow-400 fill-current" : "text-gray-300"
-                }`}
-              />
-            ))}
-            <span className="text-sm text-muted-foreground ml-2">
-              ({product.reviews})
-            </span>
+      // Organize products by category
+      const organizedProducts = {
+        supplements: data.filter((p: Product) => p.category === 'suppliments'),
+        equipment: data.filter((p: Product) => p.category === 'equipment'),
+        apparel: data.filter((p: Product) => p.category === 'apparel')
+      };
+      
+      setProducts(organizedProducts);
+    } catch (err) {
+      setErrors(prev => ({ ...prev, products: 'Failed to load products' }));
+      console.error('Error fetching products:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, products: false }));
+    }
+  };
+
+  // Fetch cart from API
+  const fetchCart = async () => {
+    try {
+      setLoading(prev => ({ ...prev, cart: true }));
+      setErrors(prev => ({ ...prev, cart: null }));
+      
+      const response = await axios.get<CartResponse>(`${API_BASE_URL}/cart/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      
+      // Convert cart items to object format {productId: quantity}
+      const cartItemsObj = response.data.items.reduce((acc, item) => {
+        acc[item.product] = item.quantity;
+        return acc;
+      }, {} as {[key: number]: number});
+      
+      setCartItems(cartItemsObj);
+    } catch (err) {
+      setErrors(prev => ({ ...prev, cart: 'Failed to load cart' }));
+      console.error('Error fetching cart:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, cart: false }));
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCart();
+  }, []);
+
+  // Add to cart with API sync
+  const addToCart = async (productId: number) => {
+    const prevCart = { ...cartItems };
+    const newQuantity = (prevCart[productId] || 0) + 1;
+    
+    // Optimistic UI update
+    setCartItems(prev => ({ ...prev, [productId]: newQuantity }));
+    setCartOperation({ loading: true, productId });
+    
+    try {
+      await axios.post(`${API_BASE_URL}/cart/add/`, {
+        product: productId,
+        quantity: 1
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+    } catch (err) {
+      // Revert on error
+      setCartItems(prevCart);
+      console.error('Error adding to cart:', err);
+    } finally {
+      setCartOperation({ loading: false, productId: null });
+    }
+  };
+
+  // Remove from cart with API sync
+  const removeFromCart = async (productId: number) => {
+    const prevCart = { ...cartItems };
+    const newQuantity = Math.max(0, (prevCart[productId] || 0) - 1);
+    
+    // Optimistic UI update
+    setCartItems(prev => ({ ...prev, [productId]: newQuantity }));
+    setCartOperation({ loading: true, productId });
+    
+    try {
+      await axios.post(`${API_BASE_URL}/cart/remove/`, {
+        product: productId,
+        quantity: 1
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+    } catch (err) {
+      // Revert on error
+      setCartItems(prevCart);
+      console.error('Error removing from cart:', err);
+    } finally {
+      setCartOperation({ loading: false, productId: null });
+    }
+  };
+
+  // Place order
+  const placeOrder = async () => {
+    try {
+      setLoading(prev => ({ ...prev, order: true }));
+      setErrors(prev => ({ ...prev, order: null }));
+      
+      // Convert cart items to API format
+      const orderItems = Object.entries(cartItems)
+        .filter(([_, quantity]) => quantity > 0)
+        .map(([productId, quantity]) => ({
+          product: parseInt(productId),
+          quantity
+        }));
+      
+      if (orderItems.length === 0) {
+        setErrors(prev => ({ ...prev, order: 'Your cart is empty' }));
+        return;
+      }
+      
+      // Calculate total
+      const allProducts = [
+        ...products.supplements,
+        ...products.equipment,
+        ...products.apparel
+      ];
+      
+      const total = orderItems.reduce((sum, item) => {
+        const product = allProducts.find(p => p.id === item.product);
+        return sum + (product?.price || 0) * item.quantity;
+      }, 0);
+      
+      // Prepare order data
+      const orderData: OrderData = {
+        items: orderItems,
+        total
+      };
+      
+      // Submit order
+      await axios.post(`${API_BASE_URL}/orders/`, orderData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      
+      // Clear cart after successful order
+      setCartItems({});
+      await axios.delete(`${API_BASE_URL}/cart/clear/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      
+      alert('Order placed successfully!');
+    } catch (err) {
+      setErrors(prev => ({ ...prev, order: 'Failed to place order' }));
+      console.error('Error placing order:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, order: false }));
+    }
+  };
+
+  const ProductCard = ({ product }: { product: Product }) => {
+    const isCartOperationLoading = cartOperation.loading && cartOperation.productId === product.id;
+    
+    return (
+      <Card className="bg-gradient-card border-border hover:shadow-glow transition-all duration-300 relative">
+        {product.bestseller && (
+          <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground z-10">
+            Bestseller
+          </Badge>
+        )}
+        {product.originalPrice && (
+          <Badge className="absolute top-3 right-3 bg-green-500/20 text-green-400 z-10">
+            Sale
+          </Badge>
+        )}
+        
+        <CardHeader>
+          <div className="text-center space-y-2">
+            <span className="text-5xl">{product.image}</span>
+            <CardTitle className="text-lg text-foreground">{product.name}</CardTitle>
           </div>
-          
-          <div className="flex items-center justify-center space-x-2">
-            <span className="text-2xl font-bold text-foreground">
-              ${product.price}
-            </span>
-            {product.originalPrice && (
-              <span className="text-lg text-muted-foreground line-through">
-                ${product.originalPrice}
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-1 mb-2">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`h-4 w-4 ${
+                    i < Math.floor(product.rating) ? "text-yellow-400 fill-current" : "text-gray-300"
+                  }`}
+                />
+              ))}
+              <span className="text-sm text-muted-foreground ml-2">
+                ({product.reviews})
               </span>
-            )}
-          </div>
-        </div>
-
-        <p className="text-sm text-muted-foreground text-center">
-          {product.description}
-        </p>
-
-        <div className="space-y-2">
-          <p className="text-sm font-semibold text-foreground">Features:</p>
-          <ul className="space-y-1">
-            {product.features.slice(0, 3).map((feature: string, index: number) => (
-              <li key={index} className="text-xs text-muted-foreground flex items-center">
-                <span className="w-1 h-1 bg-primary rounded-full mr-2"></span>
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="pt-4 space-y-2">
-          {cartItems[product.id] > 0 ? (
-            <div className="flex items-center justify-center space-x-4">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => removeFromCart(product.id)}
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-              <span className="font-semibold text-foreground">
-                {cartItems[product.id]}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => addToCart(product.id)}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
             </div>
-          ) : (
-            <Button
-              className="w-full"
-              onClick={() => addToCart(product.id)}
-              disabled={!product.inStock}
-            >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              {product.inStock ? "Add to Cart" : "Out of Stock"}
+            
+            <div className="flex items-center justify-center space-x-2">
+              <span className="text-2xl font-bold text-foreground">
+                ${product.price.toFixed(2)}
+              </span>
+              {product.originalPrice && (
+                <span className="text-lg text-muted-foreground line-through">
+                  ${product.originalPrice.toFixed(2)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <p className="text-sm text-muted-foreground text-center">
+            {product.description}
+          </p>
+
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-foreground">Features:</p>
+            <ul className="space-y-1">
+              {product.features.slice(0, 3).map((feature: string, index: number) => (
+                <li key={index} className="text-xs text-muted-foreground flex items-center">
+                  <span className="w-1 h-1 bg-primary rounded-full mr-2"></span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="pt-4 space-y-2">
+            {cartItems[product.id] > 0 ? (
+              <div className="flex items-center justify-center space-x-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => removeFromCart(product.id)}
+                  disabled={isCartOperationLoading}
+                >
+                  {isCartOperationLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Minus className="h-4 w-4" />
+                  )}
+                </Button>
+                <span className="font-semibold text-foreground">
+                  {cartItems[product.id]}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => addToCart(product.id)}
+                  disabled={isCartOperationLoading}
+                >
+                  {isCartOperationLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                className="w-full"
+                onClick={() => addToCart(product.id)}
+                disabled={!product.inStock || isCartOperationLoading}
+              >
+                {isCartOperationLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <>
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    {product.inStock ? "Add to Cart" : "Out of Stock"}
+                  </>
+                )}
+              </Button>
+            )}
+            
+            <Button className="w-full" variant="outline">
+              <Heart className="h-4 w-4 mr-2" />
+              Add to Wishlist
             </Button>
-          )}
-          
-          <Button className="w-full" variant="outline">
-            <Heart className="h-4 w-4 mr-2" />
-            Add to Wishlist
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   const totalItems = Object.values(cartItems).reduce((sum, count) => sum + count, 0);
 
@@ -307,10 +427,25 @@ const Shop = () => {
               <Filter className="h-4 w-4 mr-2" />
               Filter
             </Button>
-            <Button className="relative">
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Cart ({totalItems})
-            </Button>
+            <div className="flex flex-col items-end">
+              <Button 
+                className="relative"
+                onClick={placeOrder}
+                disabled={totalItems === 0 || loading.order}
+              >
+                {loading.order ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <>
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Cart ({totalItems})
+                  </>
+                )}
+              </Button>
+              {errors.order && (
+                <p className="text-red-500 text-xs mt-1">{errors.order}</p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -348,27 +483,60 @@ const Shop = () => {
           </TabsList>
 
           <TabsContent value="supplements">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {products.supplements.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            {loading.products ? (
+              <LoadingPlaceholder />
+            ) : errors.products ? (
+              <ErrorPlaceholder 
+                message={errors.products} 
+                onRetry={fetchProducts} 
+              />
+            ) : products.supplements.length === 0 ? (
+              <EmptyPlaceholder message="No supplements available" />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {products.supplements.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="equipment">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {products.equipment.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            {loading.products ? (
+              <LoadingPlaceholder />
+            ) : errors.products ? (
+              <ErrorPlaceholder 
+                message={errors.products} 
+                onRetry={fetchProducts} 
+              />
+            ) : products.equipment.length === 0 ? (
+              <EmptyPlaceholder message="No equipment available" />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {products.equipment.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="apparel">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {products.apparel.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            {loading.products ? (
+              <LoadingPlaceholder />
+            ) : errors.products ? (
+              <ErrorPlaceholder 
+                message={errors.products} 
+                onRetry={fetchProducts} 
+              />
+            ) : products.apparel.length === 0 ? (
+              <EmptyPlaceholder message="No apparel available" />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {products.apparel.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 
