@@ -179,13 +179,13 @@ const Programs = () => {
 
                 <div className="pt-4 space-y-2">
                   <Button asChild variant="default" className="w-full">
-                  <Link to="/signup" className="flex items-center">
+                  <Link to="/dashboard" className="flex items-center">
                     <PlayCircle className="h-4 w-4 mr-2" />
                     Start Program
                   </Link>
                 </Button>
                   <Button className="w-full" asChild variant="outline">
-                    <Link to="/login" className="flex items-center">
+                    <Link to="/dashboard" className="flex items-center">
                     Learn More
                     </Link>
                   </Button>

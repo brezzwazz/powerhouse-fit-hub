@@ -41,9 +41,18 @@ const SignUp = () => {
       const { re_password, ...signupData } = formData;
       
       await axios.post(`${API_BASE_URL}/auth/users/`, formData);
+
+      const loginResponse = await axios.post(`${API_BASE_URL}/auth/jwt/create/`, {
+      email: formData.email,
+      password: formData.password
+  });
+  
+  // Save tokens
+   localStorage.setItem('authToken', loginResponse.data.access);
+   localStorage.setItem('refreshToken', loginResponse.data.refresh);
       
-      // Redirect to login after signup
-      navigate('/login');
+      
+      navigate('/intro');
     } catch (err) {
       setLoading(false);
       if (err.response) {

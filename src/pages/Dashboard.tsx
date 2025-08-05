@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate,Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,8 @@ import {
   Info
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
+import { useAuth } from '@/context/AuthContext'; 
+import LogoutButton from '@/components/LogoutButton';
 
 const API_BASE_URL = "https://powerhousekrd.pythonanywhere.com"; 
 
@@ -72,7 +74,7 @@ interface Achievement {
 const apiService = {
   fetchMembership: (): Promise<{ data: MembershipData }> => axios.get(`${API_BASE_URL}/api/membership`),
   fetchCurrentProgram: (): Promise<{ data: ProgramData }> => axios.get(`${API_BASE_URL}/api/current-program`),
-  fetchMealPlan: (): Promise<{ data: MealPlanData }> => axios.get(`${API_BASE_URL}/api/meal-plan`),
+  fetchMealPlan: (): Promise<{ data: MealPlanData }> => axios.get(`${API_BASE_URL}/api/meal`),
   fetchFeaturedProducts: (): Promise<{ data: Product[] }> => axios.get(`${API_BASE_URL}/api/featured-products`),
   fetchQuickStats: (): Promise<{ data: QuickStat[] }> => axios.get(`${API_BASE_URL}/api/quick-stats`),
   fetchAchievements: (): Promise<{ data: Achievement[] }> => axios.get(`${API_BASE_URL}/api/achievements`),
@@ -138,6 +140,7 @@ const EmptyPlaceholder = ({ message }: { message: string }) => (
 );
 
 const Dashboard = () => {
+  
   // Initialize states with proper typing
   const [loading, setLoading] = useState<LoadingState>({
     membership: true,
@@ -226,16 +229,9 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
 
-const handleLogout = async () => {
-  try {
-    await apiService.logout();
-    localStorage.removeItem('authToken');
-    navigate('/');
-  } catch (error) {
-    console.error('Logout failed:', error);
-    // Show error toast/notification
-  }
-};
+
+  
+  
 
   return (
     <div className="min-h-screen bg-background">
@@ -245,7 +241,7 @@ const handleLogout = async () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Welcome back, Alex!</h1>
+            
             <p className="text-muted-foreground">Ready to crush your goals today?</p>
           </div>
           <div className="flex space-x-2">
@@ -259,11 +255,7 @@ const handleLogout = async () => {
               <Settings className="h-5 w-5" />
               </Link>
             </Button>
-            <Button variant="ghost" size="icon"  onClick={handleLogout} aria-label="Logout">
-             
-              <LogOut className="h-5 w-5" />
-             
-            </Button>
+            <LogoutButton />
           </div>
         </div>
 

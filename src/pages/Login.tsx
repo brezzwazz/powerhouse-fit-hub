@@ -28,20 +28,27 @@ const Login = () => {
     setLoading(true);
     setError('');
 
-    try {
-     
-      const response = await axios.post(`${API_BASE_URL}/auth/token/login/`, {
-        email: formData.email,  // Use username field
-        password: formData.password
-      });
+     try {
+      // Reset Axios headers for this request
+      const config = {
+        headers: { Authorization: undefined }
+      };
+
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/jwt/create/`,
+        {
+          email: formData.email,
+          password: formData.password
+        },
+        config  // Use custom config
+      );
       
-   
-      localStorage.setItem('access_token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
+      // Correct token handling (remove duplicate authToken)
+      localStorage.setItem('authToken', response.data.access);
+      localStorage.setItem('refreshToken', response.data.refresh);
       
-     
+      // Set header for future requests
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;
-      
       navigate('/dashboard');
     } catch (err) {
       setLoading(false);

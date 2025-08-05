@@ -199,12 +199,12 @@ const Nutrition = () => {
 
                     <div className="pt-4 space-y-2">
                       <Button asChild variant="default" className="w-full" >
-                        <Link to="/signup" className="flex items-center">
+                        <Link to="/dashboard" className="flex items-center">
                         Start This Plan
                         </Link>
                       </Button>
                       <Button asChild variant="outline"  className="w-full" >
-                        <Link to="/login" className="flex items-center">
+                        <Link to="/dashboard" className="flex items-center">
                         View Sample Menu
                         </Link>
                       </Button>
@@ -275,12 +275,12 @@ const Nutrition = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" variant="secondary" className="text-lg px-8">
-                   <Link to="/login" className="flex items-center">
+                   <Link to="/dashboard" className="flex items-center">
                   Get Nutrition Consultation
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" className="text-lg px-8 border-white/20 text-white hover:bg-white/10">
-                 <Link to="/login" className="flex items-center">
+                 <Link to="/dashboard" className="flex items-center">
                   Download Meal Planner
                   </Link>
                 </Button>

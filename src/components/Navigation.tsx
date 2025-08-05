@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Dumbbell } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { isAuthenticated, isLoading, userEmail } = useAuth();
 
   const navItems = [
     { name: "Home", href: "/" },
@@ -15,6 +18,19 @@ const Navigation = () => {
   ];
 
   const isActive = (href: string) => location.pathname === href;
+
+  // Close mobile menu when user authenticates
+  useEffect(() => {
+    if (isAuthenticated) {
+      setIsOpen(false);
+    }
+  }, [isAuthenticated]);
+
+  // Get user initial from email
+  const getUserInitial = () => {
+    if (!userEmail) return "U";
+    return userEmail.charAt(0).toUpperCase();
+  };
 
   return (
     <nav className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
@@ -45,12 +61,29 @@ const Navigation = () => {
                 {item.name}
               </Link>
             ))}
-            <Button asChild variant="outline" size="sm">
-              <Link to="/login">Login</Link>
-            </Button>
-            <Button asChild variant="hero" size="sm">
-              <Link to="/signup">Join us</Link>
-            </Button>
+            
+            {/* Conditionally render auth buttons or profile */}
+            {isLoading ? (
+              <div className="flex items-center space-x-4">
+                <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
+              </div>
+            ) : isAuthenticated ? (
+              <Link
+                to="/dashboard"
+                className="flex items-center justify-center h-10 w-10 rounded-full bg-primary text-white font-bold text-lg hover:opacity-80 transition-opacity"
+              >
+                {getUserInitial()}
+              </Link>
+            ) : (
+              <>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/login">Login</Link>
+                </Button>
+                <Button asChild variant="hero" size="sm">
+                  <Link to="/signup">Join us</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -83,17 +116,38 @@ const Navigation = () => {
                   {item.name}
                 </Link>
               ))}
+              
               <div className="flex flex-col space-y-2 pt-4">
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/dashboard" onClick={() => setIsOpen(false)}>
-                    Dashboard
+                {isLoading ? (
+                  <div className="flex justify-center">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
+                  </div>
+                ) : isAuthenticated ? (
+                  <Link
+                    to="/dashboard"
+                    className={`block px-3 py-2 text-base font-medium transition-colors text-center ${
+                      isActive("/profile")
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    My Profile
                   </Link>
-                </Button>
-                <Button asChild variant="hero" size="sm">
-                  <Link to="/login" onClick={() => setIsOpen(false)}>
-                    Login
-                  </Link>
-                </Button>
+                ) : (
+                  <>
+                    <Button asChild variant="outline" size="sm">
+                      <Link to="/login" onClick={() => setIsOpen(false)}>
+                        Login
+                      </Link>
+                    </Button>
+                    <Button asChild variant="hero" size="sm">
+                      <Link to="/signup" onClick={() => setIsOpen(false)}>
+                        Join us
+                      </Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>

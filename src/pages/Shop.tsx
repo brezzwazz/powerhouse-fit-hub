@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,7 +52,7 @@ interface OrderData {
   total: number;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://powerhousekrd.pythonanywhere.com';
 
 // Helper components
 const LoadingPlaceholder = () => (
@@ -551,10 +552,14 @@ const Shop = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" variant="secondary" className="text-lg px-8">
+                  <Link to="/login" className="flex items-center">
                   Join VIP Program
+                  </Link>
                 </Button>
                 <Button size="lg" variant="outline" className="text-lg px-8 border-white/20 text-white hover:bg-white/10">
+                  <Link to="/login" className="flex items-center">
                   Learn More
+                  </Link>
                 </Button>
               </div>
             </CardContent>

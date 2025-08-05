@@ -20,7 +20,9 @@ interface Notification {
 // API Service
 const notificationService = {
   fetchNotifications: (): Promise<{ data: Notification[] }> => 
-    axios.get(`${API_BASE_URL}/api/notifications`)
+    axios.get(`${API_BASE_URL}/api/notifications`),
+  markAllAsRead: (): Promise<void> => 
+    axios.patch(`${API_BASE_URL}/api/notifications`)
 };
 
 const NotificationsPage = () => {
@@ -46,6 +48,26 @@ const NotificationsPage = () => {
 
     fetchNotifications();
   }, []);
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      // Optimistically update UI
+      setNotifications(prev => 
+        prev.map(n => ({ ...n, isRead: true }))
+      );
+      
+      // Send request to backend
+      await notificationService.markAllAsRead();
+    } catch (err) {
+      setError('Failed to mark notifications as read');
+      console.error('Mark all as read error:', err);
+      
+      // Revert on error
+      setNotifications(prev => 
+        prev.map(n => ({ ...n, isRead: false }))
+      );
+    }
+  };
 
   // Helper components
   const LoadingPlaceholder = () => (
@@ -108,7 +130,7 @@ const NotificationsPage = () => {
         </div>
 
         {/* Content */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-border">
+        <div className="bg-card text-card-foreground rounded-xl shadow-sm border border-border">
           {/* Loading State */}
           {loading && <LoadingPlaceholder />}
           
@@ -124,19 +146,27 @@ const NotificationsPage = () => {
               {notifications.map((notification) => (
                 <div 
                   key={notification.id} 
-                  className={`p-6 flex space-x-4 ${notification.isRead ? 'bg-muted/20' : 'bg-white dark:bg-gray-800'}`}
+                  className={`
+                    p-6 flex space-x-4 transition-colors
+                    ${notification.isRead 
+                      ? 'bg-muted/20 dark:bg-gray-800/60' 
+                      : 'bg-card dark:bg-gray-800 border-l-4 border-primary'
+                    }
+                  `}
                 >
                   <div className="mt-1">
                     {getNotificationIcon(notification.type)}
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between">
-                      <h3 className="font-semibold text-foreground">{notification.title}</h3>
+                      <h3 className={`font-semibold ${notification.isRead ? 'text-foreground' : 'text-primary'}`}>
+                        {notification.title}
+                      </h3>
                       <span className="text-sm text-muted-foreground">
                         {new Date(notification.timestamp).toLocaleDateString()}
                       </span>
                     </div>
-                    <p className="mt-2 text-muted-foreground">{notification.message}</p>
+                    <p className="mt-2 text-foreground">{notification.message}</p>
                   </div>
                 </div>
               ))}
@@ -147,7 +177,11 @@ const NotificationsPage = () => {
         {/* Mark all as read button */}
         {!loading && !error && notifications.length > 0 && (
           <div className="mt-6 flex justify-end">
-            <Button variant="outline">
+            <Button 
+              variant="outline"
+              onClick={handleMarkAllAsRead}
+              disabled={notifications.every(n => n.isRead)}
+            >
               Mark all as read
             </Button>
           </div>
